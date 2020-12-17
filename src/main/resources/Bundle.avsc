@@ -1,0 +1,29 @@
+{
+    "namespace": "ba.tc.datamodel",
+    "type": "record",
+    "name": "Bundle",
+    "fields":[
+         {
+             "name": "bundleId",
+             "type": "string"
+         },
+         {
+             "name": "tcId",
+             "type": "string"
+         },
+         {
+            "name": "metadata",
+            "type": "string"
+         },
+         {
+            "name": "pdfs",
+            "type": {
+                "type": "array",
+                "items": {
+                     "name": "uri",
+                     "type": "string"
+                }
+            }
+         }
+    ]
+}

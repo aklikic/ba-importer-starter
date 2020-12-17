@@ -1,0 +1,13 @@
+{
+    "namespace": "ba.tc.datamodel",
+    "type": "record",
+    "name": "TransportContainer",
+    "fields":[
+         {
+            "name": "tcId", "type": "string"
+         },
+         {
+            "name": "uri", "type": "string"
+         }
+    ]
+}
