@@ -9,8 +9,8 @@
   <!-- set encoding of this project to UTF-8 to avoid warnings -->
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.compiler.target>1.8</maven.compiler.target>
-    <maven.compiler.source>1.8</maven.compiler.source>
+    <maven.compiler.target>11</maven.compiler.target>
+    <maven.compiler.source>11</maven.compiler.source>
     <akka.stream.alpakka.file.version>2.0.2</akka.stream.alpakka.file.version>
     <akka.version>2.6.10</akka.version>
     <alpakka.kafka.version>2.0.5</alpakka.kafka.version>
@@ -182,8 +182,8 @@
         <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
         <configuration>
-          <source>1.11</source>
-          <target>1.11</target>
+          <source>${maven.compiler.source}</source>
+          <target>${maven.compiler.target}</target>
         </configuration>
         <executions>
           <execution>
