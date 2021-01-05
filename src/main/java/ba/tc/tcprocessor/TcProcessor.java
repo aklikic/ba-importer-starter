@@ -1,5 +1,6 @@
 package ba.tc.tcprocessor;
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.kafka.CommitterSettings;
 import akka.kafka.ConsumerMessage;
@@ -18,6 +19,8 @@ import ba.tc.datamodel.TransportContainer;
 import com.typesafe.config.Config;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class TcProcessor {
@@ -31,6 +34,7 @@ public class TcProcessor {
     private final Materializer materializer;
     private final CommitterSettings committerSettings;
     private final AtomicReference<Consumer.Control> control = new AtomicReference<>(Consumer.createNoopControl());
+    private CompletionStage<Done> streamCompletion;
 
     private final RestartSettings restartSettings = RestartSettings.create(java.time.Duration.ofSeconds(3),java.time.Duration.ofSeconds(30),0.2);
     public TcProcessor(ActorSystem system, Materializer materializer, TcProcessorBusinessLogic businessLogic, TopicProducer topicProducer, Config consumerConfig) {
@@ -39,7 +43,6 @@ public class TcProcessor {
         this.tcTopic = system.settings().config().getString("topic.tc");
         this.bundleTopic = system.settings().config().getString("topic.bundle");
         this.businessLogic = businessLogic;
-        String consumerConfigName = "tc-processor-consumer";
         String consumerGroupId = "tc-processor";
         tcConsumer = new TopicConsumer<TransportContainer>(system, consumerConfig, tcTopic, consumerGroupId, Serializers.tcDeSerializer, Serializers.resumeOnDeSerializeException());
         this.committerSettings = CommitterSettings.create(system);
@@ -59,11 +62,18 @@ public class TcProcessor {
                 .via(Producer.flexiFlow(topicProducer.producerSettings()))
                 .map(m -> m.passThrough());
 
+        this.streamCompletion =
         RestartSource.onFailuresWithBackoff(restartSettings,() -> source)
                      .toMat(Committer.sink(committerSettings),Keep.both())
                      .mapMaterializedValue(pair->
-                             Consumer.createDrainingControl(control.get(), pair.second())
+                             //Consumer.createDrainingControl(control.get(), pair.second())
+                             pair.second()
                      ).run(materializer);
+    }
+
+    public void stop(){
+        if(streamCompletion != null)
+            control.get().drainAndShutdown(streamCompletion, Executors.newCachedThreadPool());
     }
 
 }

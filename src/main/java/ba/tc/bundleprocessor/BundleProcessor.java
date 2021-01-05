@@ -1,5 +1,6 @@
 package ba.tc.bundleprocessor;
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.kafka.CommitterSettings;
 import akka.kafka.ConsumerMessage;
@@ -17,6 +18,8 @@ import ba.tc.datamodel.Bundle;
 import ba.tc.datamodel.TransportContainer;
 import com.typesafe.config.Config;
 
+import java.util.concurrent.CompletionStage;
+import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BundleProcessor {
@@ -26,13 +29,14 @@ public class BundleProcessor {
     private final CommitterSettings committerSettings;
     private final Materializer materializer;
     private final AtomicReference<Consumer.Control> control = new AtomicReference<>(Consumer.createNoopControl());
+    private CompletionStage<Done> streamCompletion;
+
     public BundleProcessor(ActorSystem system, Materializer materializer, Config consumerConfig, BundleProcessorBusinessLogic businessLogic) {
         this.businessLogic=businessLogic;
         this.materializer=materializer;
         String bundleTopic = system.settings().config().getString("topic.bundle");
-        String consumerConfigName = "bundle-processor-consumer";
         String consumerGroupId = "bundle-processor";
-        this.bundleConsumer = new TopicConsumer<Bundle>(system, consumerConfig,bundleTopic, consumerGroupId, Serializers.bundleDeSerializer, Serializers.resumeOnDeSerializeException());
+        this.bundleConsumer = new TopicConsumer<>(system, consumerConfig,bundleTopic, consumerGroupId, Serializers.bundleDeSerializer, Serializers.resumeOnDeSerializeException());
         this.committerSettings = CommitterSettings.create(system);
     }
 
@@ -47,11 +51,18 @@ public class BundleProcessor {
                         .asSource()
                         .map(m -> m.second());
 
+        this.streamCompletion =
         RestartSource.onFailuresWithBackoff(restartSettings,() -> source)
                 .toMat(Committer.sink(committerSettings), Keep.both())
                 .mapMaterializedValue(pair->
-                        Consumer.createDrainingControl(control.get(), pair.second())
+                        //Consumer.createDrainingControl(control.get(), pair.second())
+                        pair.second()
                 ).run(materializer);
+    }
+
+    public void stop(){
+        if(streamCompletion != null)
+            control.get().drainAndShutdown(streamCompletion, Executors.newCachedThreadPool());
     }
 
 
