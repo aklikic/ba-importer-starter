@@ -1,22 +1,26 @@
 package ba.tc.tcgenerator;
 
+import akka.Done;
 import akka.actor.ActorSystem;
 import akka.kafka.javadsl.Producer;
-import akka.stream.ActorAttributes;
-import akka.stream.Attributes;
-import akka.stream.Materializer;
-import akka.stream.Supervision;
+import akka.stream.*;
+import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import ba.tc.Serializers;
 import ba.tc.TopicProducer;
+import ba.tc.bundleprocessor.BundleProcessorBusinessLogicMock;
 import ba.tc.datamodel.TransportContainer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CompletionStage;
 
 public class TcGenerator {
 
+    private static Logger log = LoggerFactory.getLogger(TcGenerator.class);
     private Duration frequency = Duration.ofMillis(1000);
     private final TopicProducer topicProducer;
     private final Materializer materializer;
@@ -35,22 +39,28 @@ public class TcGenerator {
     }
     private TransportContainer createNewTc(){
         UUID tcId = UUID.randomUUID();
-        System.out.println("Generating TC:"+tcId);
+        log.info("Generating TC:{}",tcId);
         return TransportContainer.newBuilder()
                 .setTcId(tcId.toString())
                 .setUri("uri").build();
     }
 
-    public void start(){
+    public KillSwitch start(){
+        log.info("Start");
         Attributes attr = ActorAttributes.withSupervisionStrategy(
                 exception -> {
                     exception.printStackTrace();
                         return (Supervision.Directive) Supervision.stop();
 
                 });
+        return
         generatorSource().map(tc-> Serializers.tcSerializer.apply(tc,tcTopic))
                          .withAttributes(attr)
-                         .runWith(Producer.plainSink(topicProducer.producerSettings()),materializer);
+                         .viaMat(KillSwitches.single(), Keep.right())
+                         .toMat(Producer.plainSink(topicProducer.producerSettings()), Keep.both())
+                         .run(materializer)
+                         .first();
+                         //.runWith(Producer.plainSink(topicProducer.producerSettings()),materializer);
     }
 
 }

@@ -3,7 +3,7 @@
   <!-- options of the project -->
   <groupId>ba-import-starter</groupId>
   <artifactId>ba-import-starter</artifactId>
-  <version>0.0.1</version>
+  <version>0.1.0</version>
   <packaging>jar</packaging>
   <name>ba-import-starter</name>
   <!-- set encoding of this project to UTF-8 to avoid warnings -->
@@ -18,11 +18,13 @@
     <lombok.version>1.18.12</lombok.version>
     <avro.version>1.10.1</avro.version>
     <maven-compiler-plugin-version>3.8.1</maven-compiler-plugin-version>
+    <docker.maven.plugin.version>0.33.0</docker.maven.plugin.version>
     <testcontainers.version>1.15.1</testcontainers.version>
     <junit.platform.version>1.6.2</junit.platform.version>
     <junit.jupiter.version>5.6.2</junit.jupiter.version>
     <junit.version>4.12</junit.version>
     <scalatest.version>3.1.0-M2</scalatest.version>
+    <akka.management.version>1.0.9</akka.management.version>
   </properties>
   <!-- set up build process of this project -->
 
@@ -59,6 +61,16 @@
       <groupId>com.typesafe.akka</groupId>
       <artifactId>akka-discovery_${scala.binary.version}</artifactId>
       <version>${akka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.akka.discovery</groupId>
+      <artifactId>akka-discovery-kubernetes-api_${scala.binary.version}</artifactId>
+      <version>${akka.management.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.akka.management</groupId>
+      <artifactId>akka-management_${scala.binary.version}</artifactId>
+      <version>${akka.management.version}</version>
     </dependency>
     <dependency>
       <groupId>com.typesafe.akka</groupId>
@@ -115,6 +127,16 @@
       <version>${scalatest.version}</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>com.typesafe.akka</groupId>
+      <artifactId>akka-slf4j_${scala.binary.version}</artifactId>
+      <version>${akka.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.2.3</version>
+    </dependency>
   </dependencies>
 
   <repositories>
@@ -146,16 +168,22 @@
           <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
         </plugin>
+        <plugin>
+          <groupId>io.fabric8</groupId>
+          <artifactId>docker-maven-plugin</artifactId>
+          <version>${docker.maven.plugin.version}</version>
+        </plugin>
       </plugins>
     </pluginManagement>
+
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
           <version>${maven-compiler-plugin-version}</version>
         <configuration>
-          <source>1.8</source>
-          <target>1.8</target>
+          <source>1.11</source>
+          <target>1.11</target>
         </configuration>
         <executions>
           <execution>
@@ -186,7 +214,58 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <version>2.2.6</version>
+        <executions>
+          <execution>
+            <phase>validate</phase>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <dateFormat>yyyyMMdd-HHmmss</dateFormat>
+          <dotGitDirectory>${project.basedir}/.git</dotGitDirectory>
+          <generateGitPropertiesFile>false</generateGitPropertiesFile>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>io.fabric8</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>${docker.maven.plugin.version}</version>
+        <configuration>
+          <images>
+            <image>
+              <name>%a</name>
+              <build>
+                <from>adoptopenjdk:11-jre-hotspot</from>
+                <tags>
+                  <tag>latest</tag>
+                  <tag>${version}</tag>
+                </tags>
+                <entryPoint>
+                  java $JAVA_OPTS -cp '/maven/*' $MAIN_CLASS
+                </entryPoint>
+                <assembly>
+                  <descriptorRef>artifact-with-dependencies</descriptorRef>
+                </assembly>
+              </build>
+            </image>
+          </images>
+        </configuration>
+        <executions>
+          <execution>
+            <id>build-docker-image</id>
+            <phase>package</phase>
+            <goals>
+              <goal>build</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
-

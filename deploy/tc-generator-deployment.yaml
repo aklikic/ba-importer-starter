@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tc-generator
+  name: tc-generator
+  namespace: ba-import-starter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tc-generator
+  template:
+    metadata:
+      labels:
+        app: tc-generator
+    spec:
+      containers:
+        - name: tc-generator
+          image: gcr.io/gsa-sandbox-249915/lightbend/ba-import-starter:0.1.0
+          env:
+            - name: "JAVA_OPTS"
+              value: "-Dconfig.resources=application.k8s.conf -Dlogger.resource=logback.xml"
+            - name: "MAIN_CLASS"
+              value: "ba.tc.tcgenerator.TcGeneratorApp"
+            - name: "KAFKA_SERVICE_NAME"
+              value: "cloudflow-strimzi-kafka-bootstrap"
+            - name: "KAFKA_SERVICE_NAMESPACE"
+              value: "cloudflow"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+          ports:
+            - name: management
+              containerPort: 8558
+              protocol: TCP
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 0.5
+              memory: 512Mi

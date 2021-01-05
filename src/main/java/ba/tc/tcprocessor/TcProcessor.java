@@ -17,6 +17,8 @@ import ba.tc.TopicConsumer;
 import ba.tc.TopicProducer;
 import ba.tc.datamodel.TransportContainer;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -25,7 +27,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class TcProcessor {
 
-
+    private static Logger log = LoggerFactory.getLogger(TcProcessor.class);
     private final TopicConsumer<TransportContainer> tcConsumer;
     private final TopicProducer topicProducer;
     private final String tcTopic;
@@ -49,7 +51,7 @@ public class TcProcessor {
     }
 
     public void start(){
-
+        log.info("Start");
         Source<ConsumerMessage.CommittableOffset,Consumer.Control> source =
         tcConsumer.getConsumerSource()
                 .mapMaterializedValue(c->{
@@ -71,7 +73,7 @@ public class TcProcessor {
                      ).run(materializer);
     }
 
-    public void stop(){
+    public void shutdown(){
         if(streamCompletion != null)
             control.get().drainAndShutdown(streamCompletion, Executors.newCachedThreadPool());
     }

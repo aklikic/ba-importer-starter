@@ -16,13 +16,17 @@ import ba.tc.Serializers;
 import ba.tc.TopicConsumer;
 import ba.tc.datamodel.Bundle;
 import ba.tc.datamodel.TransportContainer;
+import ba.tc.tcgenerator.TcGenerator;
 import com.typesafe.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class BundleProcessor {
+    private static Logger log = LoggerFactory.getLogger(BundleProcessor.class);
     private final TopicConsumer<Bundle> bundleConsumer;
     private final BundleProcessorBusinessLogic businessLogic;
     private final RestartSettings restartSettings = RestartSettings.create(java.time.Duration.ofSeconds(3),java.time.Duration.ofSeconds(30),0.2);
@@ -41,6 +45,7 @@ public class BundleProcessor {
     }
 
     public void start(){
+        log.info("Start");
         Source<ConsumerMessage.CommittableOffset, Consumer.Control> source =
           bundleConsumer.getConsumerSource()
                         .mapMaterializedValue(c->{
@@ -60,7 +65,7 @@ public class BundleProcessor {
                 ).run(materializer);
     }
 
-    public void stop(){
+    public void shutdown(){
         if(streamCompletion != null)
             control.get().drainAndShutdown(streamCompletion, Executors.newCachedThreadPool());
     }
