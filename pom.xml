@@ -243,7 +243,6 @@
               <build>
                 <from>adoptopenjdk:11-jre-hotspot</from>
                 <tags>
-                  <tag>latest</tag>
                   <tag>${version}</tag>
                 </tags>
                 <entryPoint>

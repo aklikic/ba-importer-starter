@@ -2,6 +2,7 @@ kind: Role
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: pod-reader
+  namespace: ba-import-starter
 rules:
   - apiGroups: [""] # "" indicates the core API group
     resources: ["pods"]
@@ -11,13 +12,40 @@ kind: RoleBinding
 apiVersion: rbac.authorization.k8s.io/v1
 metadata:
   name: read-pods
+  namespace: ba-import-starter
 subjects:
   # Uses the default service account.
   # Consider creating a dedicated service account to run your
   # Akka Cluster services and binding the role to that one.
-  - kind: ServiceAccount
-    name: default
+  - kind: User
+    name: system:serviceaccount:ba-import-starter:default
 roleRef:
   kind: Role
   name: pod-reader
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ClusterRole
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: pod-reader-all-ns
+  namespace: ba-import-starter
+rules:
+  - apiGroups: [""] # "" indicates the core API group
+    resources: ["pods"]
+    verbs: ["get", "watch", "list"]
+---
+kind: ClusterRoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: read-pods-all-ns
+  namespace: ba-import-starter
+subjects:
+  # Uses the default service account.
+  # Consider creating a dedicated service account to run your
+  # Akka Cluster services and binding the role to that one.
+  - kind: User
+    name: system:serviceaccount:ba-import-starter:default
+roleRef:
+  kind: ClusterRole
+  name: pod-reader-all-ns
   apiGroup: rbac.authorization.k8s.io

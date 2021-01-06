@@ -18,15 +18,16 @@ spec:
       containers:
         - name: tc-generator
           image: gcr.io/gsa-sandbox-249915/lightbend/ba-import-starter:0.1.0
+          imagePullPolicy: Always
           env:
             - name: "JAVA_OPTS"
               value: "-Dconfig.resources=application.k8s.conf -Dlogger.resource=logback.xml"
             - name: "MAIN_CLASS"
               value: "ba.tc.tcgenerator.TcGeneratorApp"
             - name: "KAFKA_SERVICE_NAME"
-              value: "cloudflow-strimzi-kafka-bootstrap"
-            - name: "KAFKA_SERVICE_NAMESPACE"
-              value: "cloudflow"
+              value: "_tcp-clients._tcp.cloudflow-strimzi-kafka-brokers.cloudflow.svc.cluster.local"
+            #- name: "KAFKA_SERVICE_NAMESPACE"
+            #  value: "cloudflow"
           readinessProbe:
             httpGet:
               path: /ready
