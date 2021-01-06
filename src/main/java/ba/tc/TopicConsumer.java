@@ -38,7 +38,8 @@ public class TopicConsumer<T> {
         this.consumerSettings = ConsumerSettings.create(consumerConfig, new StringDeserializer(), new ByteArrayDeserializer())
                                                 .withGroupId(groupId)
                                                 .withProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest")
-                                                .withEnrichCompletionStage(DiscoverySupport.consumerBootstrapServers(consumerConfig, system));
+                                                //.withEnrichCompletionStage(DiscoverySupport.consumerBootstrapServers(consumerConfig, system));
+                                                .withEnrichCompletionStage(KafkaDiscovery.consumerBootstrapServers(consumerConfig, system, 9092));
     }
 
     public SourceWithContext<T, ConsumerMessage.CommittableOffset,  Consumer.Control> getConsumerSource() {

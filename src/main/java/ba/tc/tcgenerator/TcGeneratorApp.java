@@ -21,8 +21,6 @@ public class TcGeneratorApp {
         Config producerConfig = system.settings().config().getConfig("my-producer");
         Logger log = LoggerFactory.getLogger(TcGeneratorApp.class);
         log.info("Starting...");
-        log.info("Config: {}",system.settings().config());
-        System.getProperties().entrySet().stream().forEach(e->log.debug("{}={}",e.getKey(),e.getValue()));
         TopicProducer.create(system.classicSystem(),producerConfig)
                      .thenAccept(topicProducer -> {
                          TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer);

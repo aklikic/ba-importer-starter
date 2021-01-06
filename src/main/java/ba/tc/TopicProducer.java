@@ -1,6 +1,7 @@
 package ba.tc;
 
 import akka.actor.ActorSystem;
+import akka.discovery.Discovery;
 import akka.kafka.ProducerSettings;
 import akka.kafka.javadsl.DiscoverySupport;
 import ba.tc.tcprocessor.TcProcessorBusinessLogicMock;
@@ -11,6 +12,7 @@ import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.CompletionStage;
 
 
@@ -31,7 +33,8 @@ public class TopicProducer {
         log.info("Create...");
         ProducerSettings<String, byte[]> settings=
                 ProducerSettings.create(producerConfig, new StringSerializer(), new ByteArraySerializer())
-                                .withEnrichCompletionStage(DiscoverySupport.producerBootstrapServers(producerConfig, system));
+                                //.withEnrichCompletionStage(DiscoverySupport.producerBootstrapServers(producerConfig, system));
+                                .withEnrichCompletionStage(KafkaDiscovery.producerBootstrapServers(producerConfig, system,9092));
         return settings.createKafkaProducerCompletionStage(system.dispatcher())
                        .thenApply(producer->new TopicProducer(settings,producer));
     }

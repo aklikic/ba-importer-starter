@@ -1,0 +1,48 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: tc-processor
+  name: tc-processor
+  namespace: ba-import-starter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tc-processor
+  template:
+    metadata:
+      labels:
+        app: tc-processor
+    spec:
+      containers:
+        - name: tc-processor
+          image: gcr.io/gsa-sandbox-249915/lightbend/ba-import-starter:0.1.0
+          imagePullPolicy: Always
+          env:
+            - name: "JAVA_OPTS"
+              value: "-Dconfig.resources=application.k8s.conf -Dlogger.resource=logback.xml"
+            - name: "MAIN_CLASS"
+              value: "ba.tc.tcprocessor.TcProcessorApp"
+            - name: "KAFKA_SERVICE_NAME"
+              value: "_tcp-clients._tcp.cloudflow-strimzi-kafka-brokers.cloudflow.svc.cluster.local"
+            #- name: "KAFKA_SERVICE_NAMESPACE"
+            #  value: "cloudflow"
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: management
+          livenessProbe:
+            httpGet:
+              path: /alive
+              port: management
+          ports:
+            - name: management
+              containerPort: 8558
+              protocol: TCP
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              cpu: 0.5
+              memory: 512Mi
