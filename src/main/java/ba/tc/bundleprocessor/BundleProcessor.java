@@ -67,7 +67,7 @@ public class BundleProcessor {
 
     public void shutdown(){
         if(streamCompletion != null)
-            control.get().drainAndShutdown(streamCompletion, Executors.newCachedThreadPool());
+            control.get().drainAndShutdown(streamCompletion, materializer.executionContext());
     }
 
 
