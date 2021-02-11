@@ -4,6 +4,7 @@ import akka.NotUsed;
 import akka.japi.Pair;
 import akka.kafka.ConsumerMessage;
 import akka.kafka.ProducerMessage;
+import akka.kafka.javadsl.Producer;
 import akka.stream.ActorAttributes;
 import akka.stream.Attributes;
 import akka.stream.Supervision;
@@ -34,6 +35,24 @@ public class Serializers {
                     TransportContainer.getClassSchema(), new String(data));
             return reader.read(null, decoder);
         } catch (IOException e) {
+            //throw new RuntimeException(e);
+            return null;
+        }
+
+    };
+    public static Function<TransportContainer,byte[]> tcSerializer = (tc)-> {
+        DatumWriter<TransportContainer> writer = new SpecificDatumWriter<>(
+                TransportContainer.class);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        Encoder jsonEncoder = null;
+        try {
+            jsonEncoder = EncoderFactory.get().jsonEncoder(
+                    TransportContainer.getClassSchema(), stream);
+            writer.write(tc, jsonEncoder);
+            jsonEncoder.flush();
+           return stream.toByteArray();
+        } catch (IOException e) {
+            e.printStackTrace();
             throw new RuntimeException(e);
         }
 
@@ -63,23 +82,7 @@ public class Serializers {
                 });
     }
 
-    public static BiFunction<TransportContainer, String, ProducerRecord<String,byte[]>> tcSerializer = (tc,topic) -> {
-        DatumWriter<TransportContainer> writer = new SpecificDatumWriter<>(
-                TransportContainer.class);
-        ByteArrayOutputStream stream = new ByteArrayOutputStream();
-        Encoder jsonEncoder = null;
-        try {
-            jsonEncoder = EncoderFactory.get().jsonEncoder(
-                    TransportContainer.getClassSchema(), stream);
-            writer.write(tc, jsonEncoder);
-            jsonEncoder.flush();
-            //tcId is used for partitioning
-            return new ProducerRecord(topic,tc.getTcId().toString(),stream.toByteArray());
-        } catch (IOException e) {
-            e.printStackTrace();
-            throw new RuntimeException(e);
-        }
-    } ;
+    public static BiFunction<TransportContainer, String, ProducerRecord<String,byte[]>> tcProducerSerializer = (tc,topic) -> new ProducerRecord(topic,tc.getTcId().toString(),tcSerializer.apply(tc));
 
     public static Flow<Pair<List<Bundle>, ConsumerMessage.CommittableOffset>, ProducerMessage.Envelope<String,byte[], ConsumerMessage.CommittableOffset>, ?> getBundleSerializeFlow(String topic) {
         return
