@@ -22,7 +22,7 @@ public class TcProcessorBusinessLogicMock implements  TcProcessorBusinessLogic{
         return FlowWithContext.<TransportContainer, ConsumerMessage.CommittableOffset>create()
                              .throttle(recordsPerSecond, Duration.ofSeconds(1))
                              .map(tc -> {
-                                 log.info("Processing TC: {}" ,tc.getTcId());
+                                 //log.info("Processing TC: {}" ,tc.getTcId());
                                 return getBundlesFromTc(tc);
                              });
     }

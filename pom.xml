@@ -3,7 +3,7 @@
   <!-- options of the project -->
   <groupId>ba-import-starter</groupId>
   <artifactId>ba-import-starter</artifactId>
-  <version>0.1.0</version>
+  <version>0.2.0</version>
   <packaging>jar</packaging>
   <name>ba-import-starter</name>
   <!-- set encoding of this project to UTF-8 to avoid warnings -->
@@ -25,6 +25,8 @@
     <junit.version>4.12</junit.version>
     <scalatest.version>3.1.0-M2</scalatest.version>
     <akka.management.version>1.0.9</akka.management.version>
+    <cinnamon.version>2.15.0</cinnamon.version>
+    <lightbend.credentials.token>${lightbendToken}</lightbend.credentials.token>
   </properties>
   <!-- set up build process of this project -->
 
@@ -137,12 +139,48 @@
       <artifactId>logback-classic</artifactId>
       <version>1.2.3</version>
     </dependency>
-  </dependencies>
 
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-akka_${scala.binary.version}</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-chmetrics</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-akka-stream_${scala.binary.version}</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-prometheus</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-prometheus-httpserver</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.lightbend.cinnamon</groupId>
+      <artifactId>cinnamon-agent</artifactId>
+      <version>${cinnamon.version}</version>
+    </dependency>
+
+  </dependencies>
   <repositories>
     <repository>
       <id>projectlombok.org</id>
       <url>http://projectlombok.org/mavenrepo</url>
+    </repository>
+    <repository>
+      <id>lightbend-commercial</id>
+      <name>Lightbend Commercial</name>
+      <url>https://repo.lightbend.com/pass/${lightbend.credentials.token}/commercial-releases</url>
     </repository>
   </repositories>
 
@@ -232,6 +270,7 @@
           <generateGitPropertiesFile>false</generateGitPropertiesFile>
         </configuration>
       </plugin>
+
       <plugin>
         <groupId>io.fabric8</groupId>
         <artifactId>docker-maven-plugin</artifactId>
@@ -246,7 +285,7 @@
                   <tag>${version}</tag>
                 </tags>
                 <entryPoint>
-                  java $JAVA_OPTS -cp '/maven/*' $MAIN_CLASS
+                  java $JAVA_OPTS -javaagent:/maven/cinnamon-agent-${cinnamon.version}.jar -cp '/maven/*' $MAIN_CLASS
                 </entryPoint>
                 <assembly>
                   <descriptorRef>artifact-with-dependencies</descriptorRef>
@@ -265,6 +304,36 @@
           </execution>
         </executions>
       </plugin>
+
+      <!-- Use agent when running the application -->
+      <!--
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <executable>java</executable>
+          <arguments>
+
+            <argument>-javaagent:${project.build.directory}/dependency/cinnamon-agent.jar</argument>
+            <argument>-classpath</argument>
+            <classpath />
+            <argument>ba.tc.TestAll</argument>
+          </arguments>
+        </configuration>
+      </plugin>
+      -->
+      <!-- OPTIONAL: Use agent when running the tests -->
+      <!--
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>2.22.2</version>
+        <configuration>
+          <argLine>-javaagent:${project.build.directory}/dependency/cinnamon-agent.jar</argLine>
+        </configuration>
+      </plugin>
+ -->
     </plugins>
   </build>
 </project>

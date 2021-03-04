@@ -39,7 +39,7 @@ public class TcGenerator {
     }
     private TransportContainer createNewTc(){
         UUID tcId = UUID.randomUUID();
-        log.info("Generating TC:{}",tcId);
+        //log.info("Generating TC:{}",tcId);
         return TransportContainer.newBuilder()
                 .setTcId(tcId.toString())
                 .setUri("uri").build();
@@ -54,10 +54,11 @@ public class TcGenerator {
 
                 });
         return
-        generatorSource().map(tc-> Serializers.tcSerializer.apply(tc,tcTopic))
+        generatorSource().map(tc-> Serializers.tcProducerSerializer.apply(tc,tcTopic))
                          .withAttributes(attr)
                          .viaMat(KillSwitches.single(), Keep.right())
                          .toMat(Producer.plainSink(topicProducer.producerSettings()), Keep.both())
+                         .named("tc-generator-stream")
                          .run(materializer)
                          .first();
                          //.runWith(Producer.plainSink(topicProducer.producerSettings()),materializer);

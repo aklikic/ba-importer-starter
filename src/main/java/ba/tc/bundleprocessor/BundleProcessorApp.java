@@ -23,7 +23,7 @@ public class BundleProcessorApp {
         log.info("Starting...");
         TopicProducer.create(system.classicSystem(),producerConfig)
                      .thenAccept(topicProducer -> {
-                         BundleProcessor bundleProcessor = new BundleProcessor(system.classicSystem(),materializer,consumerConfig,new BundleProcessorBusinessLogicMock());
+                         BundleProcessor bundleProcessor = new BundleProcessor(system.classicSystem(),materializer,consumerConfig,new BundleProcessorBusinessLogicMock(materializer));
                          bundleProcessor.start();
                          Runtime.getRuntime().addShutdownHook(new Thread(){
                              @Override

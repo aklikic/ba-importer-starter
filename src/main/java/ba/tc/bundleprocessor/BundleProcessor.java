@@ -62,7 +62,7 @@ public class BundleProcessor {
                 .mapMaterializedValue(pair->
                         //Consumer.createDrainingControl(control.get(), pair.second())
                         pair.second()
-                ).run(materializer);
+                ).named("bundle-processor-stream").run(materializer);
     }
 
     public void shutdown(){
