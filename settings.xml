@@ -6,7 +6,7 @@
         <profile>
             <id>lb-telemetry</id>
             <properties>
-                <lightbendToken>******</lightbendToken>
+                <lightbendToken>uGvN9aWOxCWpBQFKZbU_Dr3FgO_Ps2i0Z6xog5LJVSuZwiiC</lightbendToken>
             </properties>
         </profile>
     </profiles>

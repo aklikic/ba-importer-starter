@@ -30,7 +30,7 @@ public class TopicProducer {
 
 
     public static CompletionStage<TopicProducer> create(ActorSystem system, Config producerConfig){
-        log.info("Create...");
+        log.info("Create...");;
         ProducerSettings<String, byte[]> settings=
                 ProducerSettings.create(producerConfig, new StringSerializer(), new ByteArraySerializer())
                                 //.withEnrichCompletionStage(DiscoverySupport.producerBootstrapServers(producerConfig, system));

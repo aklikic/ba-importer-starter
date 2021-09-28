@@ -45,11 +45,11 @@ public class BundleProcessorBusinessLogicMock implements BundleProcessorBusiness
     }
     private CompletionStage<Done> processBundle(Bundle bundle){
         log.info("Processing bundle: [bundleId:{}; tcId:{}: pdfs:{}]...",bundle.getBundleId(),bundle.getTcId(),bundle.getPdfs().size());
-        if(bundle.getBundleId().toString().hashCode() % 5 == 0 ){
+        /*if(bundle.getBundleId().toString().hashCode() % 5 == 0 ){
             CompletableFuture cf = new CompletableFuture();
             cf.completeExceptionally(new RuntimeException("BundleId "+bundle.getBundleId()+" hashCode is mode 5"));
             return cf;
-        }
+        }*/
         log.info("SUCCESS processing bundle: [bundleId:{}; tcId:{}: pdfs:{}]",bundle.getBundleId(),bundle.getTcId(),bundle.getPdfs().size());
         //simulating asynchronous processing
         return CompletableFuture.completedFuture(Done.getInstance());

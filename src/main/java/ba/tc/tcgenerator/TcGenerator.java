@@ -21,12 +21,13 @@ import java.util.concurrent.CompletionStage;
 public class TcGenerator {
 
     private static Logger log = LoggerFactory.getLogger(TcGenerator.class);
-    private Duration frequency = Duration.ofMillis(1000);
+    private final Duration frequency;
     private final TopicProducer topicProducer;
     private final Materializer materializer;
     private final String tcTopic;
 
-    public TcGenerator(ActorSystem system,TopicProducer topicProducer) {
+    public TcGenerator(ActorSystem system,TopicProducer topicProducer, Integer frequencyMillis) {
+        this.frequency = Duration.ofMillis(frequencyMillis);
         this.topicProducer = topicProducer;
         this.materializer = Materializer.createMaterializer(system);
         this.tcTopic = system.settings().config().getString("topic.tc");

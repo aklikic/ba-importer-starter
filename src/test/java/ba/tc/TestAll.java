@@ -1,19 +1,16 @@
 package ba.tc;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
-import akka.actor.testkit.typed.javadsl.ActorTestKit;
-import akka.kafka.testkit.javadsl.TestcontainersKafkaTest;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.stream.Materializer;
 import akka.testkit.javadsl.TestKit;
 import ba.tc.bundleprocessor.BundleProcessor;
 import ba.tc.bundleprocessor.BundleProcessorBusinessLogicMock;
 import ba.tc.tcgenerator.TcGenerator;
-import ba.tc.tcprocessor.TcProcessor;
-import ba.tc.tcprocessor.TcProcessorBusinessLogic;
-import ba.tc.tcprocessor.TcProcessorBusinessLogicMock;
+import ba.tc.tcprocessor.*;
+import ba.tc.tcprocessor.sync.ActorBlockingFacilitator;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValueFactory;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
@@ -21,19 +18,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 public class TestAll {
     private static Logger log = LoggerFactory.getLogger(TestAll.class);
-    private final ActorTestKit testKit;
-    private final ActorSystem system;
-    private final Materializer materializer;
     private final Helper helper ;
-    private final Config config ;
+
+    private final int workParallelism = 5;
+    private final int workTimeoutMillis = 2000;
+    private final int tcGeneratorFrequencyMillis = workTimeoutMillis / workParallelism;
+
+    private final boolean useActorForSync = true;
 
     public static void main(String[] args) throws Exception{
         TestAll test = new TestAll();
@@ -43,39 +38,59 @@ public class TestAll {
     public TestAll(){
         helper = new Helper();
         URI bootstrapUri = URI.create(helper.kafkaBootstrapServers);
-        //log.debug("Kafka: {}",bootstrapUri);
         System.setProperty("KAFKA_HOST",bootstrapUri.getHost());
         System.setProperty("KAFKA_PORT",bootstrapUri.getPort()+"");
-        testKit = ActorTestKit.create();
-        system = testKit.system();
-        materializer = Materializer.createMaterializer(system);
-        config = system.settings().config();
     }
 
     @Test
     public void test()throws Exception{
-        Config producerConfig = config.getConfig("my-producer");
-        Config consumerConfig = config.getConfig("my-consumer");
-        TopicProducer.create(system.classicSystem(),producerConfig)
-                     .thenAccept(topicProducer -> {
-                         TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer);
-                         tcGenerator.start();
+        ActorSystem testSystem =
+        ActorSystem.create(
+                Behaviors.setup(
+                        context -> {
+                            ActorSystem system = context.getSystem();
+                            Materializer materializer = Materializer.createMaterializer(system);
+                            Config config = system.settings().config();
+                            Config producerConfig = config.getConfig("my-producer");
+                            Config consumerConfig = config.getConfig("my-consumer");
+                            final ActorRef<ActorBlockingFacilitator.Command> workRouter;
+                            if(useActorForSync) {
+                                workRouter = ActorBlockingFacilitator.create(context, workParallelism, workTimeoutMillis);
+                                log.info("workerROuter: {}", workRouter.path());
+                            }else
+                                workRouter = null;
+                            TopicProducer.create(system.classicSystem(),producerConfig)
+                                    .thenAccept(topicProducer -> {
+                                        TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer,tcGeneratorFrequencyMillis);
+                                        tcGenerator.start();
 
-                         TcProcessor tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMock(),topicProducer,consumerConfig);
-                         tcProcessor.start();
+                                        TcProcessor tcProcessor = null;
+                                        if(useActorForSync)
+                                            tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingActor(workRouter,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
+                                        else
+                                            tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingCf(system,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
 
-                         BundleProcessor bundleProcessor = new BundleProcessor(system.classicSystem(),materializer,consumerConfig,new BundleProcessorBusinessLogicMock(materializer));
-                         bundleProcessor.start();
-                     });
+
+                                        tcProcessor.start();
+
+                                        BundleProcessor bundleProcessor = new BundleProcessor(system.classicSystem(),materializer,consumerConfig,new BundleProcessorBusinessLogicMock(materializer));
+                                        bundleProcessor.start();
+                                    }).exceptionally(e->{
+                                        e.printStackTrace();
+                                        return null;
+                                    });
+                            return Behaviors.empty();
+                        }),
+                "Test");
+
 
 
         Thread.sleep(150000);
-
+        TestKit.shutdownActorSystem(testSystem.classicSystem());
     }
 
     @AfterAll
     void afterClass() {
         helper.stopContainers();
-        TestKit.shutdownActorSystem(system.classicSystem());
     }
 }

@@ -23,7 +23,7 @@ public class TcGeneratorApp {
         log.info("Starting...");
         TopicProducer.create(system.classicSystem(),producerConfig)
                      .thenAccept(topicProducer -> {
-                         TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer);
+                         TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer,1000);
                          KillSwitch killSwitch = tcGenerator.start();
                          Runtime.getRuntime().addShutdownHook(new Thread(){
                              @Override
