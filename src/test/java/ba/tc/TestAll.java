@@ -8,6 +8,7 @@ import akka.testkit.javadsl.TestKit;
 import ba.tc.bundleprocessor.BundleProcessor;
 import ba.tc.bundleprocessor.BundleProcessorBusinessLogicMock;
 import ba.tc.tcgenerator.TcGenerator;
+import ba.tc.tcgenerator.TcImporterHttpServer;
 import ba.tc.tcprocessor.*;
 import ba.tc.tcprocessor.sync.ActorBlockingFacilitator;
 import com.typesafe.config.Config;
@@ -63,6 +64,9 @@ public class TestAll {
                                     .thenAccept(topicProducer -> {
                                         TcGenerator tcGenerator = new TcGenerator(system.classicSystem(),topicProducer,tcGeneratorFrequencyMillis);
                                         tcGenerator.start();
+
+                                        TcImporterHttpServer tcImporter = new TcImporterHttpServer(system.classicSystem(),materializer);
+                                        tcImporter.start(TcImporterHttpServer.processFlow(system.classicSystem(),topicProducer));
 
                                         TcProcessor tcProcessor = null;
                                         if(useActorForSync)

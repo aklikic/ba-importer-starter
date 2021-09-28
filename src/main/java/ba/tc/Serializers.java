@@ -1,6 +1,7 @@
 package ba.tc;
 
 import akka.NotUsed;
+import akka.http.javadsl.model.HttpEntity;
 import akka.japi.Pair;
 import akka.kafka.ConsumerMessage;
 import akka.kafka.ProducerMessage;
@@ -26,6 +27,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class Serializers {
+
     public static Function<byte[], TransportContainer> tcDeSerializer = (data)-> {
         DatumReader<TransportContainer> reader
                 = new SpecificDatumReader<>(TransportContainer.class);
@@ -83,6 +85,8 @@ public class Serializers {
     }
 
     public static BiFunction<TransportContainer, String, ProducerRecord<String,byte[]>> tcProducerSerializer = (tc,topic) -> new ProducerRecord(topic,tc.getTcId().toString(),tcSerializer.apply(tc));
+    public static BiFunction<TransportContainer, String, ProducerMessage.Envelope<String,byte[],Integer>> tcProducerEnvelopeSerializer = (tc,topic) -> ProducerMessage.single(new ProducerRecord(topic,tc.getTcId().toString(),tcSerializer.apply(tc)));
+
 
     public static Flow<Pair<List<Bundle>, ConsumerMessage.CommittableOffset>, ProducerMessage.Envelope<String,byte[], ConsumerMessage.CommittableOffset>, ?> getBundleSerializeFlow(String topic) {
         return
