@@ -70,7 +70,8 @@ public class TestAll {
 
                                         TcProcessor tcProcessor = null;
                                         if(useActorForSync)
-                                            tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingActor(workRouter,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
+                                            //tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingActor(workRouter,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
+                                            tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingActorAsk(system,workRouter,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
                                         else
                                             tcProcessor = new TcProcessor(system.classicSystem(),materializer,new TcProcessorBusinessLogicMockWithBlockingCf(system,workParallelism,workTimeoutMillis),topicProducer,consumerConfig);
 
