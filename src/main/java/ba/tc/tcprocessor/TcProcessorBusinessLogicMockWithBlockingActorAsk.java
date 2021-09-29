@@ -6,9 +6,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.javadsl.AskPattern;
 import akka.japi.Pair;
 import akka.kafka.ConsumerMessage;
-import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.FlowWithContext;
-import akka.stream.typed.javadsl.ActorFlow;
 import ba.tc.datamodel.Bundle;
 import ba.tc.datamodel.TransportContainer;
 import ba.tc.tcprocessor.sync.ActorBlockingFacilitator;
@@ -25,15 +23,12 @@ public class TcProcessorBusinessLogicMockWithBlockingActorAsk implements  TcProc
     private final int parallelism;
     private final Duration timeout;
     private final ActorRef<ActorBlockingFacilitator.Command> workerRouter;
-    private final Flow<Pair<TransportContainer,ConsumerMessage.CommittableOffset>,Pair<List<Bundle>,ConsumerMessage.CommittableOffset>,?> syncFlow;
 
     public TcProcessorBusinessLogicMockWithBlockingActorAsk(ActorSystem system,ActorRef<ActorBlockingFacilitator.Command> workerRouter, int parallelism, int workTimeoutSec){
         this.system = system;
         this.workerRouter = workerRouter;
         this.parallelism = parallelism;
         this.timeout = Duration.ofSeconds(workTimeoutSec);
-        syncFlow = ActorFlow.ask(parallelism,workerRouter,timeout, ActorBlockingFacilitator.Request::new)
-                            .map(ActorBlockingFacilitator.Response::getBundles);
     }
 
     public FlowWithContext<TransportContainer,  ConsumerMessage.CommittableOffset, List<Bundle>,  ConsumerMessage.CommittableOffset, NotUsed> getFlow() {
